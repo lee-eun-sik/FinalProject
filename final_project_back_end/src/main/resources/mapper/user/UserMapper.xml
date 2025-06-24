@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"  
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="back.mapper.user.UserMapper"> <!-- 매퍼의 네임스페이스 설정 -->
+	<resultMap id="userResultMap" type="back.model.user.User">
+	    <result property="usersId" column="USERS_ID"/>
+	    <result property="usersFileId" column="USERS_FILE_ID"/>
+	    <result property="usersName" column="USERS_NAME"/>
+	    <result property="usersPassword" column="USERS_PASSWORD"/>
+	    <result property="usersEmail" column="USERS_EMAIL"/>
+	    <result property="createId" column="CREATE_ID"/>
+	    <result property="updateId" column="UPDATE_ID"/>
+	    <result property="createDt" column="CREATE_DT"/>
+	    <result property="updateDt" column="UPDATE_DT"/>
+	    <result property="delYn" column="DEL_YN"/>
+	    
+	</resultMap>
+    <!-- 사용자 ID로 사용자 정보 조회 -->
+    <select id="getUserById" parameterType="string" resultType="back.model.user.User">
+        SELECT 
+            USERS_ID, 
+            USERS_FILE_ID,
+            USERS_NAME, 
+            USERS_PASSWORD, 
+            USERS_EMAIL, 
+            CREATE_DT,
+            CREATE_ID,
+            UPDATE_ID, 
+            UPDATE_DT
+        FROM 
+            USERS
+        WHERE 
+            USERS_ID = #{usersId}
+    </select>
+
+    <!-- 사용자 생성 -->
+    <insert id="registerUser" parameterType="back.model.user.User">
+        INSERT INTO USERS (
+			 USERS_ID, 
+        	 USERS_NAME, 
+        	 USERS_PASSWORD, 
+        	 USERS_EMAIL, 
+        	 CREATE_ID,
+        	 CREATE_DT
+		) VALUES (
+			 #{usersId}, 
+			 #{usersName}, 
+			 #{usersPassword}, 
+			 #{usersEmail}, 
+			 #{createId},
+			 SYSDATE
+		) 
+    </insert>
+
+   <!-- 사용자 업데이트 -->
+	<update id="updateUser" parameterType="back.model.user.User">
+	    UPDATE USERS
+	    <set>
+	        USERS_NAME = #{usersName},
+	        USERS_EMAIL = #{usersEmail},
+	        <if test="usersFileId != null">
+	            USERS_FILE_ID = #{usersFileId},
+	        </if>
+	        <if test="usersPassword != null and usersPassword != ''">
+	            USERS_PASSWORD = #{usersPassword},
+	        </if>
+	        UPDATE_ID = #{updateId},
+	        UPDATE_DT = SYSDATE
+	    </set>
+	    WHERE USERS_ID = #{usersId}
+	</update>
+    
+    <!-- 사용자 삭제 (논리 삭제) -->
+    <update id="deleteUser" parameterType="back.model.user.User">
+        UPDATE USERS 
+        SET DEL_YN = 'Y',  
+            UPDATE_ID = #{updateId},  <!-- 삭제를 수행한 관리자 ID -->
+            UPDATE_DT = SYSDATE  <!-- 삭제 시간 기록 -->
+        WHERE USERS_ID = #{usersId}
+    </update>
+
+    <!-- 모든 사용자 조회 (선택 사항) -->
+    <select id="getAllUsers" resultType="back.model.user.User">
+        SELECT 
+            USERS_ID, 
+            USERS_NAME, 
+            USERS_EMAIL, 
+            CREATE_DT, 
+            UPDATE_DT
+        FROM 
+            USERS
+        WHERE DEL_YN='N'
+    </select>
+    
+    <!--사용자 목록 조회-->
+	<select id="getUserList" parameterType="back.model.user.User" resultType="back.model.user.User">
+		SELECT *
+			FROM (
+			     SELECT
+			        ROWNUM AS RN,
+			        B.USERS_ID,
+			        B.USERS_FILE_ID,
+			    	B.USERS_NAME,
+			    	B.USERS_PASSWORD,
+			    	B.USERS_EMAIL,
+			        B.CREATE_ID,
+			        B.UPDATE_ID,
+			        B.CREATE_DT,
+			        B.UPDATE_DT,
+			        B.DEL_YN
+			    FROM (
+			        SELECT
+			        	A.USERS_ID,
+			        	A.USERS_FILE_ID,
+			        	A.USERS_NAME,
+			        	A.USERS_PASSWORD,
+			        	A.USERS_EMAIL,
+				        A.CREATE_ID,
+				        A.UPDATE_ID,
+				        TO_CHAR(A.CREATE_DT, 'YYYY-MM-DD') AS CREATE_DT,
+				        TO_CHAR(A.UPDATE_DT, 'YYYY-MM-DD') AS UPDATE_DT,
+				        A.DEL_YN 
+				    FROM USERS A
+				    <where>
+					   <if test="searchText != null and searchText != ''">
+			        	AND (
+			        	   A.USERS_NAME LIKE '%'||#{searchText}||'%'
+			        	)
+			    	   </if>
+			    	   <if test="startDate != null and startDate != ''">
+				           <![CDATA[ AND A.CREATE_DT >= TO_DATE(#{startDate} || ' 00:00:00', 'YYYY-MM-DD HH24:MI:SS') ]]>
+				        </if>
+				        <if test="endDate != null and endDate != ''">
+				           <![CDATA[ AND A.CREATE_DT <= TO_DATE(#{endDate} || ' 23:59:59', 'YYYY-MM-DD HH24:MI:SS') ]]>
+				        </if>
+			        </where>
+			        ORDER BY ${sortField} ${sortOrder}
+			    ) B
+			) C
+		WHERE C.RN BETWEEN #{startRow} AND #{endRow}
+		
+	</select>
+
+    <!--사용자 전체/조회시 수-->
+    <select id="getTotalUserCount" parameterType="back.model.user.User" resultType="int">
+        SELECT COUNT(B.USERS_ID) 
+          FROM (
+	            SELECT
+	                A.USERS_ID,
+	            	A.USERS_FILE_ID,
+	            	A.USERS_NAME,
+	            	A.USERS_PASSWORD,
+	            	A.USERS_EMAIL,
+			        A.CREATE_ID,
+			        A.UPDATE_ID,
+			        TO_CHAR(A.CREATE_DT, 'YYYY-MM-DD') AS CREATE_DT,
+			        TO_CHAR(A.UPDATE_DT, 'YYYY-MM-DD') AS UPDATE_DT,
+			        A.DEL_YN
+			    FROM USERS A
+			    <where>
+				   <if test="searchText != null and searchText != ''">
+	            	AND (
+	            	   A.USERS_NAME LIKE '%'||#{searchText}||'%'
+	            	)
+	        	   </if>
+	        	   <if test="startDate != null and startDate != ''">
+			           <![CDATA[ AND A.CREATE_DT >= TO_DATE(#{startDate} || ' 00:00:00', 'YYYY-MM-DD HH24:MI:SS') ]]>
+			        </if>
+			        <if test="endDate != null and endDate != ''">
+			           <![CDATA[ AND A.CREATE_DT <= TO_DATE(#{endDate} || ' 23:59:59', 'YYYY-MM-DD HH24:MI:SS') ]]>
+			        </if>
+		        </where>
+		    ) B
+    </select>
+    <!--사용자 이용 정지/복귀 관리-->
+    <update id="userM" parameterType="back.model.user.User">
+    	UPDATE USERS 
+        SET DEL_YN = #{delYn},  <!-- 삭제된 사용자 표시 -->
+            UPDATE_ID = #{updateId},  <!-- 삭제를 수행한 관리자 ID -->
+            UPDATE_DT = SYSDATE  <!-- 삭제 시간 기록 -->
+        WHERE USERS_ID = #{usersId}
+    
+    </update>
+    
+    <!--아이디 중복 체크-->
+    <select id="usersIdCheck" resultType="int" parameterType="back.model.user.User">
+	    SELECT COUNT(*) FROM USERS WHERE USERS_ID = #{usersId}
+	</select>
+	
+	    <!-- 사용자 삭제 
+    <delete id="deleteUser" parameterType="string">
+        DELETE FROM USERS
+        WHERE USER_ID = #{userId}
+    </delete>
+        -->
+	<select id="checkUserIdDuplicate" parameterType="string" resultType="int">
+	    SELECT COUNT(*) 
+	    FROM USERS
+	    WHERE USERS_ID = #{usersId} AND DEL_YN = 'N'
+	</select>    
+	
+    <update id="updatePassword" parameterType="map">
+		UPDATE users
+		SET 
+		users_password = #{encodedPassword},
+		UPDATE_ID = #{updateId}, 
+        UPDATE_DT = SYSDATE
+		WHERE users_id = #{usersId}
+	</update>
+	    
+	<select id="findUsersByInfo" parameterType="map" resultType="back.model.user.User">
+	    SELECT *
+	    FROM users
+	    WHERE users_email = #{usersEmail, jdbcType=VARCHAR}
+	</select>
+	
+	
+	<select id="findUserByUserIdAndEmail" resultMap="userResultMap" parameterType="map">
+	    SELECT * FROM USERS 
+	    WHERE USERS_ID = #{usersId, jdbcType=VARCHAR}
+	    AND USERS_EMAIL = #{usersEmail, jdbcType=VARCHAR}
+	    AND DEL_YN='N'
+	</select>
+	
+	<select id="findByUserId" resultMap="userResultMap" parameterType="string">
+	    SELECT USERS_ID, 
+	           USERS_NAME, 
+	           USERS_PASSWORD, 
+	           USERS_EMAIL, 
+	           CREATE_ID, 
+	           UPDATE_ID, 
+	           CREATE_DT, 
+	           UPDATE_DT,
+	           DEL_YN
+	    FROM USERS
+	    WHERE USERS_ID = #{usersId}
+	      AND DEL_YN = 'N'
+	</select>
+	
+	<!-- 이메일 주소로 사용자 목록 조회 -->
+	<select id="selectUsersByEmail" resultMap="userResultMap" parameterType="string">
+	    SELECT *
+	    FROM USERS
+	    WHERE USERS_EMAIL = #{usersEmail, jdbcType=VARCHAR}
+	      AND DEL_YN = 'N'
+	</select>
+	
+	<select id="selectByEmail" resultType="back.model.user.User" parameterType="String">
+	    SELECT users_id, users_email, users_name, users_password
+	    FROM users
+	    WHERE users_email = #{usersEmail}
+	      AND ROWNUM = 1
+	</select>
+	
+	<select id="countByEmail" resultType="int" parameterType="String">
+	    SELECT COUNT(*)
+	    FROM users
+	    WHERE users_email = #{usersEmail}
+	</select>
+	
+	<select id="isEmailRegistered" resultType="int">
+	    SELECT COUNT(*) 
+	    FROM USERS 
+	    WHERE USERS_EMAIL = #{email}
+	    AND DEL_YN = 'N'
+	</select>
+</mapper>

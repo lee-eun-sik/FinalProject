@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="back.mapper.pet_hospital.PetHospitalMapper">
+
+    <insert id="insertPetHospital" parameterType="back.model.pet_hospital.PetHospital" useGeneratedKeys="true" keyProperty="animalHospitalTreatmentId">
+	    <selectKey keyProperty="animalHospitalTreatmentId" resultType="int" order="BEFORE">
+	        SELECT ANIMAL_HOSPITAL_TREATMENT_SEQ.NEXTVAL FROM DUAL
+	    </selectKey>
+	
+	    INSERT INTO ANIMAL_HOSPITAL_TREATMENT (
+	        ANIMAL_HOSPITAL_TREATMENT_ID,
+	        ANIMAL_ID,
+	        ANIMAL_VISIT_DATE,
+	        ANIMAL_HOSPITAL_NAME,
+	        ANIMAL_MEDICATION,
+	        ANIMAL_TREATMENT_TYPE,
+	        ANIMAL_TREATMENT_MEMO,
+	        CREATE_ID,
+	        CREATE_DT,
+	        DEL_YN
+	    ) VALUES (
+	        #{animalHospitalTreatmentId},
+	        #{animalId},
+	        #{animalVisitDate},
+	        #{animalHospitalName},
+	        #{animalMedication},
+	        #{animalTreatmentType},
+	        #{animalTreatmentMemo},
+	        #{createId},
+	        SYSDATE,
+	        'N'
+	    )
+	</insert>
+	<select id="selectAllByCreateDtDesc" resultType="back.model.pet_hospital.PetHospital">
+	  SELECT ht.*
+	  FROM ANIMAL_HOSPITAL_TREATMENT ht
+	  JOIN ANIMAL a ON ht.animal_id = a.animal_id
+	  WHERE ht.del_yn = 'N'
+	    AND a.del_yn = 'N'
+	  ORDER BY ht.create_dt DESC
+	</select>
+	
+	<update id="updatePetHospital">
+	  UPDATE ANIMAL_HOSPITAL_TREATMENT
+	  SET 
+	    animal_visit_date = #{animalVisitDate},
+	    animal_hospital_name = #{animalHospitalName},
+	    animal_medication = #{animalMedication},
+	    animal_treatment_type = #{animalTreatmentType},
+	    animal_treatment_memo = #{animalTreatmentMemo},
+	    update_id = #{updateId},
+	    update_dt = #{updateDt, jdbcType=TIMESTAMP}
+	  WHERE animal_hospital_treatment_id = #{animalHospitalTreatmentId}
+	  	AND animal_id = #{animalId}
+	</update>
+	
+	<update id="logicalDeleteById">
+	    UPDATE ANIMAL_HOSPITAL_TREATMENT
+	    SET del_yn = 'Y',
+	        update_id = #{updateId},
+	        update_dt = SYSDATE
+	    WHERE animal_hospital_treatment_id = #{animalHospitalTreatmentId}
+	</update>
+</mapper>

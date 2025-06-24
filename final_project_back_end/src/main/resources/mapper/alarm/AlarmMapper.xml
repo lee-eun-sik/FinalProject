@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"  
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="back.mapper.alarm.AlarmMapper"> <!-- 매퍼의 네임스페이스 설정 -->
+
+	<insert id="create" parameterType="back.model.alarm.Alarm">
+        INSERT INTO ALARM (
+	        ALARM_ID,
+	        PET_ID,
+	        ALARM_NAME,
+	        FREQUENCY,
+	        ALARM_TIME,
+	        START_DATE,
+	        TYPE,
+	        CATEGORY,
+	        CREATE_DT,
+	        CREATE_ID
+	        ) VALUES (
+	        ALARM_SEQ.NEXTVAL,
+	        #{petId},
+	        #{alarmName},         
+	        #{alarmCycle},
+	        #{alarmTime},
+	        #{startDate},
+	        #{type},
+	        #{category},
+	        SYSDATE,
+	        #{usersId}
+	        )
+	    
+     </insert>
+     
+     <select id="OneList" parameterType="back.model.alarm.Alarm" resultType="back.model.alarm.Alarm">
+	  SELECT ALARM_ID AS alarmId,
+	  		 PET_ID AS petId,
+	  		 FREQUENCY AS alarmCycle,
+	  		 ALARM_TIME AS alarmTime,
+	  		 	-- 시간과 분 분리 (문자열 자르기)
+			    TO_NUMBER(SUBSTR(ALARM_TIME, 1, 2)) AS hour,
+				TO_NUMBER(SUBSTR(ALARM_TIME, 4, 2)) AS min,
+	
+			    
+	  		 START_DATE AS startDate,
+	  		 	-- 연 월 일 분리
+			    TO_NUMBER(TO_CHAR(START_DATE, 'YY')) AS year,
+				TRIM(TO_CHAR(START_DATE, 'MONTH', 'NLS_DATE_LANGUAGE=ENGLISH')) AS month,
+				TO_NUMBER(TO_CHAR(START_DATE, 'DD')) AS day,
+				TO_NUMBER(TO_CHAR(START_DATE, 'MM')) AS monthNum,
+	  		 
+	  		 IS_ACTIVE AS activeYn
+	  		 
+	  		 FROM ALARM
+	  		 WHERE
+	  		 <!-- 알람아이디 OR 펫아이디 OR 카테고리 등등 조건 추가-->
+	  		 PET_ID = #{petId}
+	  		 AND CATEGORY = #{category}
+	  		 AND DEL_YN = 'N'  -- 삭제 안된것만
+	  		 
+	</select>
+    
+    <select id="list" parameterType="back.model.alarm.Alarm" resultType="back.model.alarm.Alarm">
+	  SELECT ALARM_ID AS alarmId,
+	  		 ALARM_NAME AS alarmName,
+	  		 
+	  		 FREQUENCY AS alarmCycle,
+	  		 ALARM_TIME AS alarmTime,
+	  		 	-- 시간과 분 분리 (문자열 자르기)
+			    TO_NUMBER(SUBSTR(ALARM_TIME, 1, 2)) AS hour,
+				TO_NUMBER(SUBSTR(ALARM_TIME, 4, 2)) AS min,
+			    
+	  		 START_DATE AS startDate,
+	  		 	-- 연 월 일 분리
+			    TO_NUMBER(TO_CHAR(START_DATE, 'YY')) AS year,
+				TRIM(TO_CHAR(START_DATE, 'MONTH', 'NLS_DATE_LANGUAGE=ENGLISH')) AS month,
+				TO_NUMBER(TO_CHAR(START_DATE, 'DD')) AS day,
+	  		 
+	  		 IS_ACTIVE AS activeYn,
+	  		 TYPE AS type
+	  		 FROM ALARM
+	  		 WHERE
+	  		 <!-- 알람아이디 OR 펫아이디 OR 카테고리 등등 조건 추가-->
+	  		 PET_ID = #{petId}
+	  		 AND CATEGORY = #{category}
+	  		 AND DEL_YN = 'N'
+	  		 ORDER BY ALARM_ID ASC  --오름차순
+	</select>
+	
+	<update id="update" parameterType="back.model.alarm.Alarm">
+        UPDATE ALARM SET
+        	IS_ACTIVE = #{activeYn}
+        WHERE ALARM_ID = #{alarmId}
+    </update>
+    
+    
+    <update id="AllUpdate" parameterType="back.model.alarm.Alarm">
+        UPDATE ALARM SET
+        	FREQUENCY = #{alarmCycle},
+        	ALARM_TIME = #{alarmTime},
+        	START_DATE = #{startDate}
+        WHERE
+        ALARM_ID = #{alarmId}
+        AND PET_ID = #{petId}
+        AND CATEGORY = #{category}
+    </update>
+    
+    
+    <update id="delete" parameterType="back.model.alarm.Alarm">
+        UPDATE ALARM SET
+        	IS_ACTIVE = 'N',
+        	DEL_YN = 'Y'
+        WHERE ALARM_ID = #{alarmId}
+    </update>
+    
+    <update id="petDelete" parameterType="back.model.alarm.Alarm">
+        UPDATE ALARM SET
+        	UPDATE_ID = #{updateId},
+        	UPDATE_DT = SYSDATE,
+        	IS_ACTIVE = 'N',
+        	DEL_YN = 'Y'
+        WHERE
+        	PET_ID = #{petId}
+        	AND CATEGORY = #{category}
+    </update>
+    
+    
+    <select id="alarmIdList" resultType="back.model.alarm.Alarm">
+	  SELECT
+	  	ALARM_ID AS alarmId
+	  FROM ALARM
+	  WHERE
+    	PET_ID = #{petId}
+    	AND CATEGORY = #{category}
+	</select>
+    
+	<update id="logoutDelete" parameterType="back.model.alarm.Alarm">
+        UPDATE ALARM SET
+        	IS_ACTIVE = 'N',
+        	UPDATE_ID = #{updateId},
+        	UPDATE_DT = SYSDATE
+        WHERE
+        	PET_ID = #{petId}
+        	AND CATEGORY = #{category}
+    </update>
+    
+    <update id="dropDeleteAlarm" parameterType="back.model.alarm.Alarm">
+        UPDATE ALARM SET
+        	IS_ACTIVE = 'N',
+        	DEL_YN = 'Y',
+        	UPDATE_ID = #{updateId},
+        	UPDATE_DT = SYSDATE
+        WHERE
+        	PET_ID = #{petId}
+        	AND CATEGORY = #{category}
+    </update>
+     
+   
+	
+</mapper>

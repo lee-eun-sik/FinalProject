@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"  
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="back.mapper.home.HomeMapper"> <!-- 매퍼의 네임스페이스 설정 -->
+	<!--동물 조회 리스트-->
+    <select id="getAnimalList" parameterType="map" resultType="back.model.home.Home">
+        SELECT
+            A.ANIMAL_ID,
+            A.USERS_ID,
+            A.FILE_ID,
+            A.ANIMAL_NAME,
+            A.ANIMAL_SPECIES,
+            A.ANIMAL_ADOPTIONDATE,
+            A.BIRTH_DATE,
+            A.GENDER,
+            A.ANIMAL_MEMO,
+            TO_CHAR(A.CREATE_DT, 'YYYY-MM-DD HH24:MI:SS') AS CREATE_DT,
+            TO_CHAR(A.UPDATE_DT, 'YYYY-MM-DD HH24:MI:SS') AS UPDATE_DT,
+            A.CREATE_ID,
+            A.UPDATE_ID,
+            A.DEL_YN
+        FROM
+            ANIMAL A
+        WHERE
+             A.USERS_ID = #{usersId,jdbcType=VARCHAR} <!-- usersId 파라미터의 jdbcType 명시 -->
+            AND A.DEL_YN = 'N'
+        ORDER BY
+            ${sortField} ${sortOrder}
+    </select>
+
+	<!--식물 조회 리스트-->
+    <select id="getPlantList" parameterType="map" resultType="back.model.home.Home">
+        SELECT
+            P.PLANT_ID,
+            P.USERS_ID,
+            P.FILE_ID,
+            P.PLANT_NAME,
+            P.PLANT_TYPE,
+            P.PLANT_PURCHASE_DATE,
+            P.PLANT_SUN_PREFERENCE,
+            P.PLANT_GROW_STATUS,
+            TO_CHAR(P.CREATE_DT, 'YYYY-MM-DD HH24:MI:SS') AS CREATE_DT,
+            TO_CHAR(P.UPDATE_DT, 'YYYY-MM-DD HH24:MI:SS') AS UPDATE_DT,
+            P.CREATE_ID,
+            P.UPDATE_ID,
+            P.DEL_YN
+        FROM
+            PLANT P
+        WHERE
+            P.USERS_ID = #{usersId,jdbcType=VARCHAR} 
+            AND P.DEL_YN = 'N'
+        ORDER BY
+            ${sortField} ${sortOrder}
+    </select>
+    
+    
+</mapper>

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"  
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="back.mapper.combo.ComboMapper"> <!-- 매퍼의 네임스페이스 설정 -->
+    
+    <!-- 활성화된 그룹코드 목록 -->
+    <select id="selectActiveGroups" resultType="back.model.combo.GroupCode">
+        SELECT
+            GROUP_ID,
+            GROUP_NAME
+        FROM GROUP_CODE
+        WHERE USE_YN = 'Y'
+          AND DEL_YN = 'N'
+        ORDER BY GROUP_ID
+    </select>
+
+    <!-- 그룹코드별 공통코드 목록 -->
+    <select id="selectCodesByGroupId" parameterType="string" resultType="back.model.combo.CommonCode">
+        SELECT
+            CODE_ID,
+            CODE_NAME
+        FROM COMMON_CODE
+        WHERE GROUP_ID = #{groupId}
+          AND USE_YN = 'Y'
+          AND DEL_YN = 'N'
+        <!--ORDER BY ORDER_SEQ-->
+    </select>
+    
+    
+    
+    
+    <select id="list" resultType="back.model.combo.Combo">
+	  SELECT LABEL AS label, VALUE AS value FROM COMBO
+	</select>
+    
+	<insert id="create" parameterType="back.model.combo.Combo">
+        INSERT INTO COMBO
+	        (
+	        LABEL,
+	        VALUE
+	        )
+	        VALUES 
+	        (
+	        #{label}, 
+	        #{value}
+	        )
+	    
+     </insert>
+     
+    <update id="update" parameterType="back.model.combo.Combo">
+        UPDATE COMBO SET
+        LABEL = #{label},
+        VALUE = #{value}
+        WHERE LABEL = #{label}
+    </update>
+    
+     <delete id="delete" parameterType="back.model.combo.Combo">
+        DELETE FROM COMBO 
+        WHERE LABEL = #{label}
+    </delete>
+     
+   
+	
+</mapper>

@@ -1,0 +1,267 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="back.mapper.calendar.CalendarMapper">
+
+	<select id="selectCountByDate" resultType="back.model.calendar.Calendar">
+  SELECT
+    D.DATE_INFO AS LOG_DATE,
+    T.TYPE,
+    NVL(SUM(L.COUNT), 0) AS TOTAL_COUNT
+  FROM
+    (
+      SELECT DATE_INFO, YEAR, MONTH, DAY
+      FROM DATE_INFO
+      WHERE DEL_YN = 'N'
+      <if test="year != null">
+        AND YEAR = #{year}
+      </if>
+      <if test="month != null">
+        AND MONTH = LPAD(#{month}, 2, '0')
+      </if>
+      <if test="day != null">
+        AND DAY = #{day}
+      </if>
+    ) D
+  CROSS JOIN (
+    SELECT 'animal' AS TYPE FROM DUAL
+    UNION ALL
+    SELECT 'plant' AS TYPE FROM DUAL
+  ) T
+  LEFT JOIN (
+    SELECT TO_CHAR(aht.ANIMAL_VISIT_DATE, 'YYYY-MM-DD') AS log_date, 'animal' AS type, COUNT(*) AS count
+    FROM ANIMAL_HOSPITAL_TREATMENT aht
+    JOIN ANIMAL a ON aht.ANIMAL_ID=a.ANIMAL_ID
+    WHERE aht.DEL_YN = 'N'
+    	AND a.DEL_YN='N'
+	    AND aht.CREATE_ID=#{usersId}
+	    	
+	    <if test="year != null">
+	      AND TO_CHAR(aht.ANIMAL_VISIT_DATE, 'YYYY') = #{year}
+	    </if>
+	    <if test="month != null">
+	      AND TO_CHAR(aht.ANIMAL_VISIT_DATE, 'MM') = LPAD(#{month}, 2, '0')
+	    </if>
+	    <if test="day != null">
+	      AND TO_CHAR(aht.ANIMAL_VISIT_DATE, 'DD') = LPAD(#{day}, 2, '0')
+	    </if>
+    
+    GROUP BY TO_CHAR(aht.ANIMAL_VISIT_DATE, 'YYYY-MM-DD')
+
+    UNION ALL
+
+    SELECT TO_CHAR(ata.ANIMAL_RECORD_DATE, 'YYYY-MM-DD'), 'animal', COUNT(*)
+    FROM ANIMAL_TRAINING_ACTION ata
+    JOIN ANIMAL a ON ata.ANIMAL_ID=a.ANIMAL_ID
+    WHERE ata.DEL_YN = 'N'
+    AND a.DEL_YN='N'
+    AND ata.CREATE_ID=#{usersId}
+    <if test="year != null">
+      AND TO_CHAR(ata.ANIMAL_RECORD_DATE, 'YYYY') = #{year}
+    </if>
+    <if test="month != null">
+      AND TO_CHAR(ata.ANIMAL_RECORD_DATE, 'MM') = LPAD(#{month}, 2, '0')
+    </if>
+    <if test="day != null">
+      AND TO_CHAR(ata.ANIMAL_RECORD_DATE, 'DD') = LPAD(#{day}, 2, '0')
+    </if>
+    GROUP BY TO_CHAR(ata.ANIMAL_RECORD_DATE, 'YYYY-MM-DD')
+
+    UNION ALL
+
+    SELECT TO_CHAR(aw.ANIMAL_RECORDED_DT, 'YYYY-MM-DD'), 'animal', COUNT(*)
+    FROM ANIMAL_WALK aw
+    JOIN ANIMAL a ON aw.ANIMAL_ID=a.ANIMAL_ID
+    WHERE aw.DEL_YN = 'N'
+    AND a.DEL_YN='N'
+    AND aw.CREATE_ID=#{usersId}
+    <if test="year != null">
+      AND TO_CHAR(aw.ANIMAL_RECORDED_DT, 'YYYY') = #{year}
+    </if>
+    <if test="month != null">
+      AND TO_CHAR(aw.ANIMAL_RECORDED_DT, 'MM') = LPAD(#{month}, 2, '0')
+    </if>
+    <if test="day != null">
+      AND TO_CHAR(aw.ANIMAL_RECORDED_DT, 'DD') = LPAD(#{day}, 2, '0')
+    </if>
+    GROUP BY TO_CHAR(aw.ANIMAL_RECORDED_DT, 'YYYY-MM-DD')
+
+    UNION ALL
+
+    SELECT TO_CHAR(pp.PLANT_PEST_DATE, 'YYYY-MM-DD'), 'plant', COUNT(*)
+    FROM PLANT_PEST pp
+    JOIN PLANT P ON pp.PLANT_ID=p.PLANT_ID
+    WHERE pp.DEL_YN = 'N'
+    AND p.DEL_YN='N'
+    AND pp.CREATE_ID=#{usersId}
+    <if test="year != null">
+      AND TO_CHAR(pp.PLANT_PEST_DATE, 'YYYY') = #{year}
+    </if>
+    <if test="month != null">
+      AND TO_CHAR(pp.PLANT_PEST_DATE, 'MM') = LPAD(#{month}, 2, '0')
+    </if>
+    <if test="day != null">
+      AND TO_CHAR(pp.PLANT_PEST_DATE, 'DD') = LPAD(#{day}, 2, '0')
+    </if>
+    GROUP BY TO_CHAR(pp.PLANT_PEST_DATE, 'YYYY-MM-DD')
+
+    UNION ALL
+
+    SELECT TO_CHAR(pr.PLANT_REPOTTING_DATE, 'YYYY-MM-DD'), 'plant', COUNT(*)
+    FROM PLANT_REPOTTING pr
+    JOIN PLANT P ON pr.PLANT_ID=p.PLANT_ID
+    WHERE pr.DEL_YN = 'N'
+    AND p.DEL_YN='N'
+    AND pr.CREATE_ID=#{usersId}
+    <if test="year != null">
+      AND TO_CHAR(pr.PLANT_REPOTTING_DATE, 'YYYY') = #{year}
+    </if>
+    <if test="month != null">
+      AND TO_CHAR(pr.PLANT_REPOTTING_DATE, 'MM') = LPAD(#{month}, 2, '0')
+    </if>
+    <if test="day != null">
+      AND TO_CHAR(pr.PLANT_REPOTTING_DATE, 'DD') = LPAD(#{day}, 2, '0')
+    </if>
+    GROUP BY TO_CHAR(pr.PLANT_REPOTTING_DATE, 'YYYY-MM-DD')
+
+    UNION ALL
+
+    SELECT TO_CHAR(ps.CREATE_DT, 'YYYY-MM-DD'), 'plant', COUNT(*)
+    FROM PLANT_SUNLIGHTING ps
+    JOIN PLANT P ON ps.PLANT_ID=p.PLANT_ID
+    WHERE ps.DEL_YN = 'N'
+    AND p.DEL_YN='N'
+    AND ps.CREATE_ID=#{usersId}
+    <if test="year != null">
+      AND TO_CHAR(ps.CREATE_DT, 'YYYY') = #{year}
+    </if>
+    <if test="month != null">
+      AND TO_CHAR(ps.CREATE_DT, 'MM') = LPAD(#{month}, 2, '0')
+    </if>
+    <if test="day != null">
+      AND TO_CHAR(ps.CREATE_DT, 'DD') = LPAD(#{day}, 2, '0')
+    </if>
+    GROUP BY TO_CHAR(ps.CREATE_DT, 'YYYY-MM-DD')
+
+    UNION ALL
+
+    SELECT TO_CHAR(pw.PLANT_WATERING_DATE, 'YYYY-MM-DD'), 'plant', COUNT(*)
+    FROM PLANT_WATERING pw
+    JOIN PLANT P ON pw.PLANT_ID=p.PLANT_ID
+    WHERE pw.DEL_YN = 'N'
+    AND p.DEL_YN='N'
+    AND pw.CREATE_ID=#{usersId}
+    <if test="year != null">
+      AND TO_CHAR(pw.PLANT_WATERING_DATE, 'YYYY') = #{year}
+    </if>
+    <if test="month != null">
+      AND TO_CHAR(pw.PLANT_WATERING_DATE, 'MM') = LPAD(#{month}, 2, '0')
+    </if>
+    <if test="day != null">
+      AND TO_CHAR(pw.PLANT_WATERING_DATE, 'DD') = LPAD(#{day}, 2, '0')
+    </if>
+	    GROUP BY TO_CHAR(pw.PLANT_WATERING_DATE, 'YYYY-MM-DD')
+	  ) L
+	  ON D.DATE_INFO = L.LOG_DATE AND T.TYPE = L.TYPE
+	  GROUP BY D.DATE_INFO, T.TYPE
+	  ORDER BY D.DATE_INFO, T.TYPE
+</select>
+
+
+<select id="selectLogsByDate" resultType="back.model.calendar.Calendar">
+  SELECT 
+    A.TYPE,
+    A.NAME,
+    A.ID,
+    A.CATEGORY
+  FROM (
+    SELECT 
+      'animal' AS TYPE,
+      A.ANIMAL_NAME AS NAME,
+      T.ANIMAL_ID AS ID,
+      '병원진료' AS CATEGORY
+    FROM ANIMAL_HOSPITAL_TREATMENT T
+    JOIN ANIMAL A ON T.ANIMAL_ID = A.ANIMAL_ID
+    WHERE T.DEL_YN = 'N'
+      	AND TO_CHAR(T.ANIMAL_VISIT_DATE, 'YYYY-MM-DD') = #{logDate}
+		AND A.USERS_ID=#{usersId, jdbcType=VARCHAR}
+		AND A.DEL_YN='N'
+    
+    UNION ALL
+
+    SELECT 
+      'animal', A.ANIMAL_NAME, T.ANIMAL_ID, '훈련'
+    FROM ANIMAL_TRAINING_ACTION T
+    JOIN ANIMAL A ON T.ANIMAL_ID = A.ANIMAL_ID
+    WHERE T.DEL_YN = 'N'
+      	AND TO_CHAR(T.ANIMAL_RECORD_DATE, 'YYYY-MM-DD') = #{logDate}
+		AND A.USERS_ID=#{usersId, jdbcType=VARCHAR}
+    	AND A.DEL_YN='N'
+    UNION ALL
+
+    SELECT 
+      'animal', A.ANIMAL_NAME, T.ANIMAL_ID, '산책'
+    FROM ANIMAL_WALK T
+    JOIN ANIMAL A ON T.ANIMAL_ID = A.ANIMAL_ID
+    WHERE T.DEL_YN = 'N'
+      	AND TO_CHAR(T.ANIMAL_RECORDED_DT, 'YYYY-MM-DD') = #{logDate}
+		AND A.USERS_ID=#{usersId, jdbcType=VARCHAR}
+    	AND A.DEL_YN='N'
+    UNION ALL
+
+    SELECT 
+      'plant', P.PLANT_NAME, T.PLANT_ID, '물주기'
+    FROM PLANT_WATERING T
+    JOIN PLANT P ON T.PLANT_ID = P.PLANT_ID
+    WHERE T.DEL_YN = 'N'
+      	AND TO_CHAR(T.PLANT_WATERING_DATE, 'YYYY-MM-DD') = #{logDate}
+		AND P.USERS_ID=#{usersId, jdbcType=VARCHAR}
+    	AND P.DEL_YN='N'
+    UNION ALL
+
+    SELECT 
+      'plant', P.PLANT_NAME, T.PLANT_ID, '병충해'
+    FROM PLANT_PEST T
+    JOIN PLANT P ON T.PLANT_ID = P.PLANT_ID
+    WHERE T.DEL_YN = 'N'
+     	AND TO_CHAR(T.PLANT_PEST_DATE, 'YYYY-MM-DD') = #{logDate}
+		AND P.USERS_ID=#{usersId, jdbcType=VARCHAR}
+    	AND P.DEL_YN='N'
+    UNION ALL
+
+    SELECT 
+      'plant', P.PLANT_NAME, T.PLANT_ID, '분갈이'
+    FROM PLANT_REPOTTING T
+    JOIN PLANT P ON T.PLANT_ID = P.PLANT_ID
+    WHERE T.DEL_YN = 'N'
+      	AND TO_CHAR(T.PLANT_REPOTTING_DATE, 'YYYY-MM-DD') = #{logDate}
+		AND P.USERS_ID=#{usersId, jdbcType=VARCHAR}
+		AND P.DEL_YN='N'
+    UNION ALL
+
+    SELECT 
+      'plant', P.PLANT_NAME, T.PLANT_ID, '일조량'
+    FROM PLANT_SUNLIGHTING T
+    JOIN PLANT P ON T.PLANT_ID = P.PLANT_ID
+    WHERE T.DEL_YN = 'N'
+      	AND TO_CHAR(T.CREATE_DT, 'YYYY-MM-DD') = #{logDate}
+      	AND P.USERS_ID=#{usersId, jdbcType=VARCHAR}
+      	AND P.DEL_YN='N'
+  ) A
+  ORDER BY A.TYPE, A.NAME
+</select>
+
+	<select id="selectUserAnimals" resultType="map">
+	  SELECT ANIMAL_ID AS id, ANIMAL_NAME AS name
+	  FROM ANIMAL
+	  WHERE DEL_YN = 'N'
+	    AND CREATE_ID = #{usersId, jdbcType=VARCHAR}
+	</select>
+	<select id="selectUserPlants" resultType="map">
+	  SELECT PLANT_ID AS id, PLANT_NAME AS name
+	  FROM PLANT
+	  WHERE DEL_YN = 'N'
+	    AND CREATE_ID = #{usersId, jdbcType=VARCHAR}
+	</select>
+
+</mapper>

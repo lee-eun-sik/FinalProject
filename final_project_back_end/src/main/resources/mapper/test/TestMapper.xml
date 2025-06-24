@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"  
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="back.mapper.test.TestMapper"> <!-- 매퍼의 네임스페이스 설정 -->
+    
+    <select id="getType" resultType="map">
+    SELECT CODE_ID, CODE_NAME
+    FROM COMON_CODE
+    WHERE GROUP_ID = 'TestQuestionType'
+    </select>
+    
+    
+    <select id="getQuestion" parameterType="back.model.test.Test" resultType="back.model.test.Test">
+	    SELECT *
+	    FROM (
+	        SELECT
+	            TEST_QUESTION_ID,
+	            TEST_QUESTION_CATEGORY,
+	            TEST_QUESTION_CONTENT,
+	            TEST_QUESTION_TYPE,
+	            ROW_NUMBER() OVER (
+	                PARTITION BY TEST_QUESTION_CATEGORY
+	                ORDER BY DBMS_RANDOM.VALUE
+	            ) AS rn
+	        FROM TEST_QUESTION
+	        WHERE TEST_QUESTION_CATEGORY IN ('Q01', 'Q02', 'Q03', 'Q04', 'Q05')
+	        AND TEST_QUESTION_TYPE = #{testQuestionType}
+	    )
+	   <![CDATA[
+		WHERE rn <= 3
+		]]>
+	</select>
+
+    
+    <select id="getOption" parameterType="back.model.test.Test" resultType="back.model.test.Test">
+    	SELECT
+    		TEST_OPTION_ID,
+    		TEST_QUESTION_ID,
+    		TEST_OPTION_CONTENT,
+    		TEST_OPTION_SCORE
+    	FROM TEST_OPTION
+    	WHERE TEST_QUESTION_ID IN
+    	<foreach collection="questionIds" item="id" open="(" separator="," close=")">
+    		#{id}
+    	</foreach>
+    	ORDER BY TEST_QUESTION_ID, TEST_OPTION_ID
+    </select>
+    
+	
+	<select id="getResultTopCategory" parameterType="back.model.test.Test" resultType="back.model.test.Test">
+		SELECT *
+		FROM TEST_RESULT
+		WHERE TEST_RESULT_CATEGORY = (
+			SELECT TEST_QUESTION_CATEGORY
+			FROM (
+				SELECT 
+					Q.TEST_QUESTION_CATEGORY,
+					SUM(O.TEST_OPTION_SCORE) AS TOTAL_SCORE
+				FROM TEST_OPTION O
+				JOIN TEST_QUESTION Q ON O.TEST_QUESTION_ID = Q.TEST_QUESTION_ID
+				WHERE O.TEST_OPTION_ID IN
+				<foreach collection="optionIds" item="id" open="(" separator="," close=")">
+					#{id}
+				</foreach>
+				GROUP BY Q.TEST_QUESTION_CATEGORY
+				ORDER BY TOTAL_SCORE DESC, DBMS_RANDOM.VALUE
+			)
+			WHERE ROWNUM = 1
+		)
+		AND TEST_RESULT_TYPE = #{testQuestionType, jdbcType=VARCHAR}
+	</select>
+	
+</mapper>

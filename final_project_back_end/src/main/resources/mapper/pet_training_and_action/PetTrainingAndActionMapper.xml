@@ -1,0 +1,60 @@
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="back.mapper.pet_training_and_action.PetTrainingAndActionMapper">
+
+    <insert id="insertPetTrainingAndAction" parameterType="back.model.pet_training_and_action.PetTrainingAndAction" useGeneratedKeys="true" keyProperty="animalTrainingAction">
+	    <selectKey keyProperty="animalTrainingAction" resultType="int" order="BEFORE">
+	        SELECT ANIMAL_TRAINING_ACTION_SEQ.NEXTVAL FROM DUAL
+	    </selectKey>
+	
+	    INSERT INTO ANIMAL_TRAINING_ACTION (
+	        ANIMAL_TRAINING_ACTION,
+	        ANIMAL_ID,
+	        ANIMAL_RECORD_DATE,
+	        ANIMAL_TRAINING_TYPE,
+	        ANIMAL_TRAINING_MEMO,
+	        CREATE_ID,
+	        CREATE_DT,
+	        DEL_YN
+	    ) VALUES (
+	        #{animalTrainingAction},
+	        #{animalId},
+	        #{animalRecordDate},
+	        #{animalTrainingType},
+	        #{animalTrainingMemo},
+	        #{createId},
+	        SYSDATE,
+	        'N'
+	    )
+	</insert>
+	<select id="selectAllByCreateDtDesc" resultType="back.model.pet_training_and_action.PetTrainingAndAction">
+	  SELECT ata.*
+	  FROM ANIMAL_TRAINING_ACTION ata
+	  JOIN ANIMAL a ON ata.animal_id = a.animal_id
+	  WHERE ata.del_yn = 'N'
+	    AND a.del_yn = 'N'
+	  ORDER BY ata.create_dt DESC
+	</select>
+	
+	<update id="updatePetTrainingAndAction">
+	  UPDATE ANIMAL_TRAINING_ACTION
+	  SET 
+	    animal_record_date = #{animalRecordDate},
+	    animal_training_type = #{animalTrainingType},
+	    animal_training_memo = #{animalTrainingMemo},
+	    update_id = #{updateId},
+	    update_dt = #{updateDt, jdbcType=TIMESTAMP}
+	  WHERE animal_training_action = #{animalTrainingAction}
+	</update>
+	
+	<update id="logicalDeleteById">
+	    UPDATE ANIMAL_TRAINING_ACTION
+	    SET del_yn = 'Y',
+	        update_id = #{updateId},
+	        update_dt = SYSDATE
+	    WHERE animal_training_action = #{animalTrainingAction}
+	</update>
+	
+</mapper>

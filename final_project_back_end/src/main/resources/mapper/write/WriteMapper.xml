@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"  
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="back.mapper.write.WriteMapper"> <!-- 매퍼의 네임스페이스 설정 -->
+
+    <select id="getWriteList" parameterType="back.model.write.Write" resultType="back.model.write.Write">
+             SELECT *
+             FROM (
+	             SELECT
+	                ROWNUM AS RN,
+			        B.WRITING_ID,
+					B.WRITING_SORTATION,
+					B.WRITING_CATEGORY,
+					B.WRITING_TITLE,
+					B.WRITING_CONTENT,
+					B.WRITING_VIEW_COUNT,
+					B.CREATE_ID,
+					B.UPDATE_ID,
+					B.CREATE_DT,
+					B.UPDATE_DT,
+					B.DEL_YN
+	            FROM (
+		            SELECT
+				        A.WRITING_ID,
+						A.WRITING_SORTATION,
+						A.WRITING_CATEGORY,
+						A.WRITING_TITLE,
+						A.WRITING_CONTENT,
+					    A.WRITING_VIEW_COUNT,
+						A.CREATE_ID,
+						A.UPDATE_ID,
+				        TO_CHAR(A.CREATE_DT, 'YYYY-MM-DD') AS CREATE_DT,
+				        TO_CHAR(A.UPDATE_DT, 'YYYY-MM-DD') AS UPDATE_DT,
+				        A.DEL_YN 
+				    FROM WRITING A
+				    <where>
+					    AND A.DEL_YN = 'N' 
+					   <if test="searchText != null and searchText != ''">
+		            	AND (
+		            	   A.WRITING_TITLE LIKE '%'||#{searchText}||'%'
+		            	OR A.WRITING_CONTENT LIKE '%'||#{searchText}||'%'
+		            	)
+		        	   </if>
+		        	   <if test="startDate != null and startDate != ''">
+				           <![CDATA[ AND A.CREATE_DT >= TO_DATE(#{startDate} || ' 00:00:00', 'YYYY-MM-DD HH24:MI:SS') ]]>
+				        </if>
+				        <if test="endDate != null and endDate != ''">
+				           <![CDATA[ AND A.CREATE_DT <= TO_DATE(#{endDate} || ' 23:59:59', 'YYYY-MM-DD HH24:MI:SS') ]]>
+				        </if>
+				        <if test="writingSortation != null and writingSortation != ''">
+						  AND A.WRITING_SORTATION = #{writingSortation}
+						</if>
+				        <if test="writingCategory != null and writingCategory != ''">
+						  AND A.WRITING_CATEGORY = #{writingCategory}
+						</if>
+			        </where>
+			        ORDER BY ${sortField} ${sortOrder}
+			    ) B
+		   	) C
+		    WHERE C.RN BETWEEN #{startRow} AND #{endRow}
+		    
+    </select>
+    
+    <select id="getTotalWriteCount" parameterType="back.model.write.Write" resultType="int">
+        SELECT COUNT(B.WRITING_ID) 
+          FROM (
+	            SELECT
+			        A.WRITING_ID,
+			        A.WRITING_TITLE,
+			        A.WRITING_SORTATION,
+			        A.WRITING_CATEGORY,
+			        A.WRITING_CONTENT,
+			        A.CREATE_ID,
+			        A.UPDATE_ID,
+			        TO_CHAR(A.CREATE_DT, 'YYYY-MM-DD') AS CREATE_DT,
+			        TO_CHAR(A.UPDATE_DT, 'YYYY-MM-DD') AS UPDATE_DT,
+			        A.DEL_YN
+			    FROM WRITING A
+			    <where>
+				    AND A.DEL_YN = 'N' 
+				   <if test="searchText != null and searchText != ''">
+	            	AND (
+	            	   A.WRITING_TITLE LIKE '%'||#{searchText}||'%'
+	            	OR A.WRITING_CONTENT LIKE '%'||#{searchText}||'%'
+	            	)
+	        	   </if>
+	        	   <if test="startDate != null and startDate != ''">
+			           <![CDATA[ AND A.CREATE_DT >= TO_DATE(#{startDate} || ' 00:00:00', 'YYYY-MM-DD HH24:MI:SS') ]]>
+			        </if>
+			        <if test="endDate != null and endDate != ''">
+			           <![CDATA[ AND A.CREATE_DT <= TO_DATE(#{endDate} || ' 23:59:59', 'YYYY-MM-DD HH24:MI:SS') ]]>
+			        </if>
+			        <if test="writingSortation != null and writingSortation !=''">
+			        AND A.WRITING_SORTATION = #{writingSortation}
+			        </if>
+			        <if test="writingCategory != null and writingCategory !=''">
+			        AND A.WRITING_CATEGORY =#{writingCategory}
+			        </if>
+		        </where>
+		    ) B
+    </select>
+    
+    <!--게시물 조회-->
+    <select id="getWriteById" parameterType="int" resultType="back.model.write.Write">
+            SELECT
+		        WRITING_ID,
+		        WRITING_TITLE,
+		        WRITING_CONTENT,
+		        WRITING_SORTATION,
+	            WRITING_CATEGORY,
+		        CREATE_ID,
+		        UPDATE_ID,
+		        CREATE_DT,
+		        UPDATE_DT,
+		        DEL_YN
+		    FROM WRITING 
+		    WHERE WRITING_ID = #{writingId}
+		      AND DEL_YN = 'N'
+    </select>
+    
+    <!--게시물 생성-->
+	<insert id="create" parameterType="back.model.write.Write">
+        INSERT INTO WRITING 
+	        (
+	        WRITING_ID,
+	        WRITING_TITLE,
+	        WRITING_CONTENT,
+	        WRITING_SORTATION,
+	        WRITING_CATEGORY,
+	        CREATE_ID,
+	        CREATE_DT
+	        )
+	        VALUES 
+	        (
+	        WRITING_SEQ.NEXTVAL, 
+	        #{writingTitle}, 
+	        #{writingContent},
+	        #{writingSortation},
+	        #{writingCategory},
+	        #{createId},
+	        SYSDATE
+	        )
+	    <selectKey keyProperty="writingId" resultType="int" order="AFTER">
+	       SELECT WRITING_SEQ.CURRVAL FROM DUAL
+	    </selectKey>
+     </insert>
+     
+     <!--게시물 수정-->
+    <update id="update" parameterType="back.model.write.Write">
+        UPDATE WRITING SET
+        WRITING_TITLE = #{writingTitle},
+        WRITING_CONTENT = #{writingContent},
+        WRITING_SORTATION = #{writingSortation},
+	    WRITING_CATEGORY = #{writingCategory},
+        UPDATE_ID = #{updateId},
+        UPDATE_DT = SYSDATE
+        WHERE WRITING_ID = #{writingId}
+    </update>
+    
+    <!--게시물 삭제-->
+     <update id="delete" parameterType="back.model.write.Write">
+        UPDATE WRITING 
+        SET DEL_YN = 'Y',  
+            UPDATE_ID = #{updateId},  
+            UPDATE_DT = SYSDATE  
+        WHERE WRITING_ID = #{writingId}
+    </update>
+    
+    <!--조회수 상승-->
+    <update id="incrementViewCount" parameterType="int">
+	    UPDATE WRITING
+	    SET WRITING_VIEW_COUNT = WRITING_VIEW_COUNT + 1
+	    WHERE WRITING_ID = #{writingId}
+    </update>
+     
+    <!-- 댓글 등록 -->
+    <insert id="insertComment" parameterType="back.model.write.Comment">
+        INSERT INTO COMMENTS (
+			COMMENTS_ID, 
+			WRITING_ID, 
+			PARENT_COMMENTS_ID, 
+			CONTENT, 
+			CREATE_ID,
+			CREATE_DT)
+        VALUES (
+			COMMENTS_SEQ.NEXTVAL, 
+			#{writingId},
+			#{parentCommentsId}, 
+			#{content}, 
+			#{createId},
+			SYSDATE
+			)
+    </insert>
+
+    <!-- 게시글에 대한 댓글 조회 (대댓글 포함) -->
+    <select id="getCommentsByWriteId" parameterType="int" resultType="back.model.write.Comment">
+        SELECT 
+	        COMMENTS_ID, 
+	        WRITING_ID, 
+	        PARENT_COMMENTS_ID, 
+	        CONTENT, 
+	        CREATE_ID, 
+	        UPDATE_ID,  
+	        TO_CHAR(CREATE_DT, 'YYYY-MM-DD') AS CREATE_DT,
+			TO_CHAR(UPDATE_DT, 'YYYY-MM-DD') AS UPDATE_DT,
+	        DEL_YN
+        FROM COMMENTS
+        WHERE WRITING_ID = #{writingId}
+          AND DEL_YN = 'N'
+        ORDER BY COMMENTS_ID DESC
+    </select>
+
+    <!-- 댓글 조회 -->
+    <select id="getCommentById" parameterType="int" resultType="back.model.write.Comment">
+        SELECT *
+        FROM COMMENTS
+        WHERE COMMENTS_ID = #{commentsId}
+          AND DEL_YN = 'N'
+    </select>
+
+    <!-- 댓글 수정 -->
+    <update id="updateComment" parameterType="back.model.write.Comment">
+        UPDATE COMMENTS
+        SET CONTENT = #{content},
+            UPDATE_ID = #{updateId},
+            UPDATE_DT = SYSDATE
+        WHERE COMMENTS_ID = #{commentsId}
+    </update>
+
+    <!-- 댓글 삭제 -->
+    <update id="deleteComment" parameterType="back.model.write.Comment">
+        UPDATE COMMENTS
+        SET DEL_YN = 'Y',
+        	UPDATE_ID = #{updateId},
+            UPDATE_DT = SYSDATE
+        WHERE COMMENTS_ID = #{commentsId}
+    </update>
+	
+</mapper>

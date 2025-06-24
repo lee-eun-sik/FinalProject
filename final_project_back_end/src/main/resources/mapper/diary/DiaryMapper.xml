@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"  
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="back.mapper.diary.DiaryMapper"> <!-- 매퍼의 네임스페이스 설정 -->
+    
+    <select id="getDiaryList" parameterType="back.model.diary.Diary" resultType="back.model.diary.Diary">
+			SELECT
+				A.DIARY_ID,
+				A.DIARY_TITLE,
+				A.DIARY_CONTENT,
+				A.DIARY_DATE,
+			    A.DIARY_TYPE,
+			    A.CREATE_ID,
+			    A.UPDATE_ID,
+			    A.CREATE_DT,
+			    A.UPDATE_DT,
+			    A.DEL_YN,
+			    (
+					SELECT POST_FILE_ID
+					FROM POST_FILE
+					WHERE POST_FILE_KEY = A.DIARY_ID
+					AND POST_FILE_CATEGORY = 'MMO'
+					AND DEL_YN = 'N'
+					ORDER BY POST_FILE_ID ASC
+					FETCH FIRST 1 ROWS ONLY
+				) AS THUMBNAIL
+			FROM DIARY A
+			<where>
+			A.DEL_YN='N'
+			<if test="diaryType != null and diaryType != ''">
+   			 	AND A.DIARY_TYPE = #{diaryType}
+			</if>
+			<if test="createId != null and createId != ''">
+    			AND A.CREATE_ID = #{createId}
+			</if>
+			</where>
+			ORDER BY DIARY_DATE DESC
+
+    </select>
+    
+    <select id="getDiaryById" parameterType="int" resultType="back.model.diary.Diary">
+    	SELECT
+    		DIARY_ID,
+    		USERS_ID,
+    		DIARY_TITLE,
+    		DIARY_CONTENT,
+    		DIARY_DATE,
+    		DIARY_TYPE,
+	        CREATE_ID,
+	        UPDATE_ID,
+	        CREATE_DT,
+	        UPDATE_DT,
+	       	DEL_YN
+	   	FROM DIARY
+	   	WHERE DIARY_ID = #{diaryId}
+	   		AND DEL_YN='N'
+    </select>
+	<insert id="create" parameterType="back.model.diary.Diary">
+	<selectKey keyProperty="diaryId" resultType="int" order="AFTER">
+	      SELECT DIARY_SEQ.CURRVAL  FROM DUAL
+	   </selectKey>
+        INSERT INTO DIARY 
+	        (
+	        DIARY_ID,
+	        USERS_ID,
+	        DIARY_TITLE,
+	        DIARY_CONTENT,
+	        DIARY_DATE,
+	        DIARY_TYPE,
+	        CREATE_ID,
+	        CREATE_DT
+	        )
+	        VALUES 
+	        (
+	        DIARY_SEQ.NEXTVAL,
+	        #{usersId}, 
+	        #{diaryTitle}, 
+	        #{diaryContent}, 
+	        #{diaryDate},
+	        #{diaryType},
+	        #{createId},
+	        SYSDATE
+	        )
+	   
+    </insert>
+    
+    <update id="update" parameterType="back.model.diary.Diary">
+    	update DIARY
+    	SET
+    		DIARY_TITLE=#{diaryTitle},
+    		DIARY_CONTENT=#{diaryContent},
+    		DIARY_DATE=#{diaryDate},
+    		DIARY_TYPE=#{diaryType},
+    		UPDATE_ID=#{updateId},
+    		UPDATE_DT=SYSDATE
+    	WHERE DIARY_ID=#{diaryId}
+    </update>
+    
+    <delete id="delete" parameterType="back.model.diary.Diary">
+    	UPDATE DIARY
+    	SET DEL_YN='Y',
+    		UPDATE_ID=#{updateId},
+    		UPDATE_DT=SYSDATE
+    	WHERE DIARY_ID=#{diaryId}
+    </delete>
+     <select id="getDiaryTypes" resultType="map">
+	SELECT CODE_ID, CODE_NAME
+	FROM COMMON_CODE
+	WHERE GROUP_ID = 'DiaryType'
+</select>
+    
+	
+</mapper>

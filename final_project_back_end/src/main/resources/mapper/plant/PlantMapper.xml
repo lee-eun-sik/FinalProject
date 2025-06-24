@@ -1,0 +1,436 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="back.mapper.plant.PlantMapper">
+
+  <!-- 식물 목록 리스트 -->
+<select id="getPlantList" parameterType="back.model.plant.Plant" resultType="back.model.plant.Plant">
+    SELECT
+        PLANT_ID,
+        PLANT_NAME,
+        PLANT_TYPE,
+        PLANT_PURCHASE_DATE,
+        SUNLIGHT_PREFERENCE,
+        GROWTH_STATUS,
+        CREATE_DT,
+        UPDATE_DT
+    FROM PLANT
+    <where>
+        DEL_YN = 'N'
+        <if test="plantType != null and plantType != ''">
+            AND PLANT_TYPE = #{plantType}
+        </if>
+        <if test="usersId != null">
+            AND USERS_ID = #{usersId}
+        </if>
+    </where>
+    ORDER BY PLANT_PURCHASE_DATE DESC
+</select>
+    
+
+  <!-- 식물 정보 조회 -->
+  <select id="plantInfo" resultType="back.model.plant.Plant">
+    SELECT 
+    PLANT_ID AS plantId,
+    FILE_ID AS fileId,
+    PLANT_NAME AS plantName,
+    PLANT_TYPE AS plantType,
+    PLANT_PURCHASE_DATE AS plantPurchaseDate,
+    PLANT_SUN_PREFERENCE AS plantSunPreference,
+    PLANT_GROW_STATUS AS plantGrowStatus,
+    TO_CHAR(CREATE_DT, 'YYYY.MM.DD') AS createDt
+    FROM PLANT
+    WHERE PLANT_ID = #{plantId}
+    AND DEL_YN = 'N' ORDER BY CREATE_DT DESC
+  </select>
+  
+  <!-- 식물 병충해 개별 수정-->
+  <update id="updatePestLogs" parameterType="back.model.plant.Plant">
+    update PLANT_PEST
+    SET
+    PLANT_PEST_DATE=#{plantPestDate, jdbcType=DATE},
+	PLANT_PEST_MEMO=#{plantPestMemo, jdbcType=VARCHAR},
+    UPDATE_ID=#{updateId},
+    UPDATE_DT=SYSDATE
+    WHERE PLANT_ID = #{plantId}
+    AND PLANT_PEST_ID=#{plantPestId}
+  </update>
+  
+  <!-- 식물  병충해 개별 삭제-->
+  <delete id="deletePestLogs" parameterType="back.model.plant.Plant">
+   UPDATE PLANT_PEST
+  	SET DEL_YN='Y',
+  	UPDATE_ID=#{updateId},
+  	UPDATE_DT=SYSDATE
+  	WHERE PLANT_PEST_ID = #{plantPestId}
+  </delete>
+	
+  <!-- 식물 병충해 조회 -->
+  <select id="pestlogs" resultType="back.model.plant.Plant">
+    SELECT 
+    P.PLANT_PEST_ID AS plantPestId,
+    P.PLANT_ID AS plantId,
+    P.FILE_ID AS fileId,
+    P.PLANT_PEST_DATE AS plantPestDate,
+    P.PLANT_PEST_MEMO AS plantPestMemo,
+    TO_CHAR(P.CREATE_DT, 'YYYY.MM.DD') AS createDt,
+    F.POST_FILE_NAME AS fileOriginName
+    FROM PLANT_PEST P
+    LEFT JOIN POST_FILE F
+    	ON P.FILE_ID = F.POST_FILE_ID
+    WHERE P.PLANT_ID = #{plantId}
+    	AND P.DEL_YN = 'N'
+    ORDER BY P.CREATE_DT DESC
+  </select>
+  	
+  <!-- 식물 병충해 저장 -->
+  <insert id="savePestInfo" parameterType="back.model.plant.Plant">
+    <selectKey keyProperty="plantPestId" resultType="int" order="BEFORE">
+      SELECT PLANT_PEST_SEQ.NEXTVAL FROM DUAL
+    </selectKey>
+    INSERT INTO PLANT_PEST
+    	( 
+		PLANT_PEST_ID, 
+		PLANT_ID,
+		File_ID,
+		PLANT_PEST_DATE,
+		PLANT_PEST_MEMO,
+		CREATE_ID,
+		UPDATE_ID, 
+		CREATE_DT, 
+		UPDATE_DT, 
+		DEL_YN 
+		) 
+    VALUES 
+    	( 
+		#{plantPestId}, 
+		#{plantId},
+		#{fileId},
+		#{plantPestDate, jdbcType=DATE}, 
+		#{plantPestMemo, jdbcType=VARCHAR}, 
+		#{createId}, 
+		#{updateId, jdbcType=VARCHAR}, 
+		SYSDATE, 
+		SYSDATE, 
+		'N' 
+		) 
+  </insert>
+
+  <update id="updatePestFileId" parameterType="back.model.plant.Plant">
+    UPDATE PLANT_PEST
+    SET FILE_ID = #{fileId}
+    WHERE PLANT_PEST_ID = #{plantPestId}
+  </update>
+
+
+  <!-- 식물 분갈이 개별 수정-->
+  <update id="updatePlantRepottingLogs" parameterType="back.model.plant.Plant">
+    update PLANT_REPOTTING
+    SET
+    PLANT_REPOTTING_DATE = #{repottingDate}, 
+    PLANT_REPOTTING_SOIL_CONDITION = #{soilCondition},
+    PLANT_REPOTTING_MEMO = #{repottingMemo},
+    UPDATE_ID=#{updateId},
+    UPDATE_DT=SYSDATE
+    WHERE PLANT_REPOTTING_ID=#{plantRepottingId}
+  </update>
+  
+  <!-- 식물 분갈이 단건 조회-->
+  <select id="getPlantRepottingLogsId" parameterType="int" resultType="back.model.plant.Plant">
+    SELECT
+    PLANT_REPOTTING_DATE AS repottingDate,
+    PLANT_REPOTTING_SOIL_CONDITION AS soilCondition,
+    PLANT_REPOTTING_MEMO AS repottingMemo,
+    CREATE_ID,
+    UPDATE_ID,
+    CREATE_DT,
+    UPDATE_DT,
+    DEL_YN
+    FROM PLANT_REPOTTING
+    WHERE PLANT_REPOTTING_ID = #{plantRepottingId}
+    AND DEL_YN='N'
+  </select>
+	
+  <!-- 식물  분갈이 개별 삭제-->
+  <delete id="deletePlantRepottingLogs" parameterType="back.model.plant.Plant">
+   UPDATE PLANT_REPOTTING
+  	SET DEL_YN='Y',
+  	UPDATE_ID=#{updateId},
+  	UPDATE_DT=SYSDATE
+  	WHERE PLANT_REPOTTING_ID = #{plantRepottingId}
+  </delete>
+  
+  <!-- 식물 분갈이 조회 -->
+  <select id="repottinglogs" resultType="back.model.plant.Plant">
+    SELECT 
+    PLANT_REPOTTING_ID AS plantRepottingId,
+    PLANT_ID AS plantId,
+    PLANT_REPOTTING_DATE AS repottingDate,
+    PLANT_REPOTTING_SOIL_CONDITION AS soilCondition,
+    PLANT_REPOTTING_MEMO AS repottingMemo,
+    TO_CHAR(CREATE_DT, 'YYYY.MM.DD') AS createDt
+    FROM PLANT_REPOTTING
+    WHERE PLANT_ID = #{plantId}
+    AND DEL_YN = 'N' ORDER BY CREATE_DT DESC
+  </select>
+  
+  <!-- 식물 분갈이 저장 -->
+  <insert id="saveRepottingInfo" parameterType="back.model.plant.Plant">
+    <selectKey keyProperty="plantRepottingId" resultType="int" order="BEFORE">
+      SELECT PLANT_REPOTTING_SEQ.NEXTVAL FROM DUAL
+    </selectKey>
+    INSERT INTO PLANT_REPOTTING 
+    	( 
+		PLANT_REPOTTING_ID, 
+		PLANT_ID, 
+		PLANT_REPOTTING_DATE, 
+		PLANT_REPOTTING_SOIL_CONDITION, 
+		PLANT_REPOTTING_MEMO, 
+		CREATE_ID,
+		UPDATE_ID, 
+		CREATE_DT, 
+		UPDATE_DT, 
+		DEL_YN 
+		) 
+    VALUES 
+    	( 
+		#{plantRepottingId}, 
+		#{plantId}, 
+		#{repottingDate, jdbcType=DATE}, 
+		#{soilCondition, jdbcType=VARCHAR}, 
+		#{repottingMemo, jdbcType=VARCHAR},
+		#{createId}, 
+		#{updateId, jdbcType=VARCHAR}, 
+		SYSDATE, 
+		SYSDATE, 
+		'N' 
+		) 
+  </insert>
+  
+  <!-- 식물 일조량 단건 조회-->
+  <select id="getPlantSunlightLogsId" parameterType="int" resultType="back.model.plant.Plant">
+    SELECT PLANT_SUNLIGHTING_ID AS plantSunlightingId,
+    PLANT_SUNLIGHTING_STATUS AS sunlightStatus,
+    PLANT_SUNLIGHTING_MEMO AS sunlightMemo,
+    CREATE_ID,
+    UPDATE_ID,
+    CREATE_DT,
+    UPDATE_DT,
+    DEL_YN
+    FROM PLANT_SUNLIGHTING
+    WHERE PLANT_SUNLIGHTING_ID = #{plantSunlightingId}
+    AND DEL_YN='N'
+  </select>
+
+  <!-- 식물 일조량 개별 수정-->
+  <update id="updatePlantSunlightLogs" parameterType="back.model.plant.Plant">
+    update PLANT_SUNLIGHTING
+    SET
+    PLANT_SUNLIGHTING_STATUS = #{sunlightStatus, jdbcType=VARCHAR},
+    PLANT_SUNLIGHTING_MEMO = #{sunlightMemo},
+    UPDATE_ID=#{updateId},
+    UPDATE_DT=SYSDATE
+    WHERE PLANT_SUNLIGHTING_ID=#{plantSunlightingId}
+  </update>
+  
+  <!-- 식물 일조량 로그 개별 삭제-->
+  <delete id="deletePlantSunlightLogs" parameterType="back.model.plant.Plant">
+    UPDATE PLANT_SUNLIGHTING
+    SET DEL_YN='Y',
+    UPDATE_ID=#{updateId},
+    UPDATE_DT=SYSDATE
+    WHERE PLANT_SUNLIGHTING_ID = #{plantSunlightingId}
+  </delete>
+  	
+	<!-- 식물 일조량 조회 -->
+  <select id="findByPlantId" resultType="back.model.plant.Plant">
+    SELECT PLANT_SUNLIGHTING_ID AS plantSunlightingId,
+    PLANT_ID AS plantId,
+    PLANT_SUNLIGHTING_STATUS AS sunlightStatus,
+    PLANT_SUNLIGHTING_MEMO AS sunlightMemo,
+    TO_CHAR(CREATE_DT, 'YYYY.MM.DD') AS createDt
+    FROM PLANT_SUNLIGHTING
+    WHERE PLANT_ID = #{plantId}
+    AND DEL_YN = 'N' ORDER BY CREATE_DT DESC
+  </select>
+
+  <select id="selectPlantCheck" parameterType="int" resultType="map">
+    SELECT plant_name AS plantName,
+    plant_purchase_date AS plantPurchaseDate
+    FROM plant
+    WHERE plant_id = #{plantId}
+  </select>
+
+  <select id="selectPlantById" parameterType="string" resultType="back.model.plant.Plant">
+    SELECT
+    PLANT_ID,
+    USERS_ID,
+    FILE_ID,
+    PLANT_NAME,
+    PLANT_TYPE,
+    PLANT_PURCHASE_DATE,
+    PLANT_SUN_PREFERENCE,
+    PLANT_GROW_STATUS,
+    CREATE_ID,
+    UPDATE_ID,
+    CREATE_DT,
+    UPDATE_DT,
+    DEL_YN
+    FROM PLANT
+    WHERE PLANT_ID = #{plantId}
+  </select>
+
+	<!-- 식물 등록 -->
+  <insert id="create" parameterType="back.model.plant.Plant">
+    <selectKey keyProperty="plantId" resultType="int" order="BEFORE">
+      SELECT PLANT_SEQ.NEXTVAL FROM DUAL
+    </selectKey> 
+    INSERT INTO PLANT 
+    ( 
+		PLANT_ID, 
+		USERS_ID,
+		FILE_ID,
+		PLANT_NAME, 
+		PLANT_TYPE, 
+		PLANT_PURCHASE_DATE, 
+		PLANT_SUN_PREFERENCE, 
+		PLANT_GROW_STATUS, 
+		CREATE_ID, 
+		UPDATE_ID, 
+		CREATE_DT, 
+		UPDATE_DT, 
+		DEL_YN 
+		) 
+    VALUES 
+    	( 
+		#{plantId}, 
+		#{usersId}, 
+		#{fileId},
+		#{plantName}, 
+		#{plantType}, 
+		#{plantPurchaseDate, jdbcType=DATE}, 
+		#{plantSunPreference}, 
+		#{plantGrowStatus}, 
+		#{createId, jdbcType=VARCHAR
+		},
+		 #{updateId, jdbcType=VARCHAR}, 
+		 SYSDATE, 
+		 SYSDATE, 'N' 
+		 ) 
+  </insert>
+  <update id="updateFileId">
+	  UPDATE plant
+	  SET file_id = #{fileId}
+	  WHERE plant_id = #{plantId}
+  </update>
+
+	<!-- 식물 일조량 저장 -->
+  <insert id="saveSunlightInfo" parameterType="back.model.plant.Plant" useGeneratedKeys="true" keyProperty="plantSunlightingId" keyColumn="PLANT_SUNLIGHTING_ID">
+    <selectKey keyProperty="plantSunlightingId" resultType="int" order="BEFORE">
+      SELECT PLANT_SUNLIGHTING_SEQ.NEXTVAL FROM DUAL
+    </selectKey>
+    INSERT INTO PLANT_SUNLIGHTING 
+    	( 
+		PLANT_SUNLIGHTING_ID, 
+		PLANT_ID, 
+		PLANT_SUNLIGHTING_STATUS, 
+		PLANT_SUNLIGHTING_MEMO, 
+		CREATE_ID, 
+		UPDATE_ID, 
+		CREATE_DT, 
+		UPDATE_DT, 
+		DEL_YN 
+		) 
+    VALUES 
+    	( 
+		#{plantSunlightingId}, 
+		#{plantId}, 
+		#{sunlightStatus, jdbcType=VARCHAR}, 
+		#{sunlightMemo}, 
+		#{createId}, 
+		#{updateId, jdbcType=VARCHAR}, 
+		SYSDATE, 
+		SYSDATE, 'N' 
+		) 
+  </insert>
+
+  <!-- 식물 수정 -->
+  <update id="updatePlant" parameterType="back.model.plant.Plant">
+    UPDATE PLANT
+    SET
+    PLANT_NAME = #{plantName},
+    PLANT_TYPE = #{plantType},
+    PLANT_PURCHASE_DATE = #{plantPurchaseDate, jdbcType=DATE},
+    PLANT_SUN_PREFERENCE = #{plantSunPreference},
+    PLANT_GROW_STATUS = #{plantGrowStatus},
+    UPDATE_ID = #{updateId, jdbcType=VARCHAR},
+    UPDATE_DT = SYSDATE
+    WHERE PLANT_ID = #{plantId}
+  </update>
+
+	<!-- 식물 삭제 -->
+  <update id="deletePlant" parameterType="int">
+    UPDATE PLANT
+    SET
+    DEL_YN ='Y',
+    UPDATE_DT = SYSDATE
+    WHERE PLANT_ID = #{plantId}
+  </update>
+  
+  <!-- 물주기 기록 저장 -->
+	<insert id="WaterCreate" parameterType="back.model.plant.Plant">
+        INSERT INTO PLANT_WATERING (
+            PLANT_WATERING_ID,
+            PLANT_ID,
+            PLANT_WATERING_DATE,
+        	CREATE_ID,
+            CREATE_DT
+        ) VALUES (
+            PLANT_WATERING_SEQ.NEXTVAL,  
+            #{plantId},
+            SYSDATE,
+            #{createId},
+            SYSDATE
+        )  
+        
+        <selectKey keyProperty="waterId" resultType="int" order="AFTER">
+	       SELECT PLANT_WATERING_SEQ.CURRVAL FROM DUAL
+	    </selectKey>
+	</insert>
+	
+	<!-- 물주기 기록 삭제-->
+	<update id="WaterDelete" parameterType="back.model.plant.Plant">
+	    UPDATE PLANT_WATERING
+	    SET DEL_YN = 'Y'
+	    WHERE PLANT_WATERING_ID = #{waterId}
+	</update>
+	
+	<!-- 물주기 기록 조회 -->
+    <select id="waterList" parameterType="back.model.plant.Plant" resultType="back.model.plant.Plant">
+
+	        SELECT
+	        	PLANT_WATERING_ID AS waterId,
+	        	PLANT_WATERING_DATE AS waterDt
+
+            FROM PLANT_WATERING
+            WHERE PLANT_ID = #{plantId}
+            AND DEL_YN = 'N'
+            ORDER BY PLANT_WATERING_DATE DESC  --오름차순
+
+    </select>
+    
+    <update id="updatePlantFileId" parameterType="map">
+	    UPDATE PLANT
+	    SET file_id = #{fileId}
+	    WHERE PLANT_ID = #{plantId}
+	</update>
+
+
+	<select id="plantIdList" resultType="back.model.plant.Plant">
+	  SELECT
+	  	PLANT_ID AS petId
+	  FROM PLANT
+	  WHERE
+    	CREATE_ID = #{createId}
+    	AND DEL_YN = 'N'
+	</select>
+</mapper>

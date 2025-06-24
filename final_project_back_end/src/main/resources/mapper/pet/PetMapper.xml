@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"  
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="back.mapper.pet.PetMapper">
+
+    <!-- 
+        반려동물 등록 쿼리 
+        - ANIMAL_SEQ 시퀀스를 통해 animalId를 사전 생성
+        - FILE_ID는 나중에 update로 별도 설정 가능
+        - 사용자 ID는 user.usersId로 참조
+    -->
+    <insert id="insertPet" parameterType="back.model.pet.Pet">
+        <!-- 동물 ID(ANIMAL_ID) 자동 생성 -->
+        <selectKey keyProperty="animalId" resultType="int" order="BEFORE">
+            SELECT ANIMAL_SEQ.NEXTVAL FROM DUAL
+        </selectKey>
+
+        INSERT INTO ANIMAL (
+            animal_id, users_id, file_id, animal_name, animal_species, animal_adoptiondate,
+            birth_date, gender, animal_memo, create_id, update_id, del_yn, create_dt, update_dt
+        )
+        VALUES (
+            #{animalId},
+            #{user.usersId, jdbcType=VARCHAR},
+            #{fileId, jdbcType=BIGINT},  
+            #{animalName},
+            #{animalSpecies},
+            #{animalAdoptionDate},
+            #{birthDate},
+            #{gender},
+            #{animalMemo},
+            #{createId, jdbcType=VARCHAR},
+            #{updateId, jdbcType=VARCHAR},
+            'N',
+            SYSDATE,
+            SYSDATE
+        )
+    </insert>
+
+    <!-- 
+        파일 ID 업데이트 쿼리 
+        - ANIMAL 테이블에 FILE_ID를 사후 업데이트
+        - 동물 정보 등록 후 파일 업로드가 성공한 경우 사용
+    -->
+    <update id="updatePetFileId" parameterType="map">
+	    UPDATE ANIMAL
+	    SET file_id = #{fileId}
+	    WHERE animal_id = #{animalId}
+	</update>
+
+    <update id="updatePet" parameterType="back.model.pet.Pet">
+	    UPDATE ANIMAL
+	    SET
+	        animal_name = #{animalName},
+	        animal_species = #{animalSpecies, jdbcType=VARCHAR},
+	        animal_adoptiondate = #{animalAdoptionDate, jdbcType=DATE},
+	        birth_date = #{birthDate, jdbcType=DATE},
+	        gender = #{gender, jdbcType=CHAR},
+	        animal_memo = #{animalMemo, jdbcType=VARCHAR},
+	        update_id = #{updateId, jdbcType=VARCHAR},
+	        update_dt = SYSDATE
+	    WHERE animal_id = #{animalId}
+	</update>
+	<!-- PetMapper.xml -->
+	<update id="deletePetByIdAndUser" parameterType="map">
+	    UPDATE ANIMAL
+	    SET del_yn = 'Y',
+	        update_dt = SYSDATE,
+	        update_id = #{usersId}
+	    WHERE animal_id = #{animalId}
+	      AND users_id = #{usersId}
+	</update>
+	
+	<select id="getPetByIdAndUsername" parameterType="map" resultType="back.model.pet.Pet">
+	  SELECT a.*, pf.post_file_path AS fileUrl
+		FROM ANIMAL a
+		LEFT JOIN POST_FILE pf 
+		  ON (a.animal_id = pf.post_file_key
+		  AND pf.post_file_category = #{category})
+		WHERE a.animal_id = #{animalId}
+		  AND a.users_id = #{usersId}
+		  AND a.del_yn = 'N'
+	</select>
+	
+	<select id="petIdList" resultType="back.model.pet.Pet">
+	  SELECT
+	  	ANIMAL_ID AS petId
+	  FROM ANIMAL
+	  WHERE
+    	CREATE_ID = #{createId}
+    	AND DEL_YN = 'N'
+	</select>
+
+</mapper>

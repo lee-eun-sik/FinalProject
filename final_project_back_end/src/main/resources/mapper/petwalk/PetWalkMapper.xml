@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="back.mapper.petwalk.PetWalkMapper">
+
+
+	<!-- 가장최근 walk 아이디로 정보 조회 -->
+    <select id="petCurrentLoad" parameterType="back.model.pet.Pet" resultType="back.model.pet.Pet">
+        SELECT walkDt, walkTime
+	    FROM (
+	        SELECT ANIMAL_RECORDED_DT AS walkDt, ANIMAL_ELAPSED_TIME AS walkTime
+	        FROM (
+	            SELECT
+	            	ANIMAL_RECORDED_DT,
+        			ANIMAL_ELAPSED_TIME
+	            FROM ANIMAL_WALK
+	            WHERE ANIMAL_WALK_ID = #{walkId}
+	            ORDER BY CREATE_DT DESC
+	        )
+	        WHERE ROWNUM = 1
+	    )
+
+    </select>
+
+
+	<!-- 동물아이디의 가장 최근 walk 아이디 조회 -->
+    <select id="getCurrentWalkId" parameterType="back.model.pet.Pet" resultType="back.model.pet.Pet">
+        SELECT walkId
+	    FROM (
+	        SELECT ANIMAL_WALK_ID AS walkId
+	        FROM (
+	            SELECT ANIMAL_WALK_ID
+	            FROM ANIMAL_WALK
+	            WHERE ANIMAL_ID = #{animalId}
+	            ORDER BY CREATE_DT DESC
+	        )
+	        WHERE ROWNUM = 1
+	    )
+
+    </select>
+
+	<!-- 산책 정보 임시등록 -->
+	<insert id="petWalkSave" parameterType="back.model.pet.Pet">
+	        INSERT INTO ANIMAL_WALK (
+	            ANIMAL_WALK_ID,
+	            ANIMAL_ID,
+	            ANIMAL_ELAPSED_TIME,
+	            CREATE_DT,
+	            CREATE_ID
+	        ) VALUES (
+	            ANIMAL_WALK_SEQ.NEXTVAL,  
+	            #{animalId},
+	            #{walkTime},
+	            SYSDATE,
+	            #{createId}
+	        )  
+	        
+	        <selectKey keyProperty="walkId" resultType="int" order="AFTER">
+		       SELECT ANIMAL_WALK_SEQ.CURRVAL FROM DUAL
+		    </selectKey>
+	</insert>
+	
+	<!-- 산책 정보 최종등록(수정방식으로) -->
+    <update id="petWalkUpdate" parameterType="back.model.pet.Pet">
+        UPDATE ANIMAL_WALK
+        SET 
+            ANIMAL_RECORDED_DT = SYSDATE,
+            ANIMAL_ELAPSED_TIME = #{walkTime},
+            CREATE_DT = SYSDATE,
+            CREATE_ID = #{createId}
+        WHERE ANIMAL_WALK_ID = #{walkId}
+        AND DEL_YN = 'N'
+    </update>
+
+    <!-- 게시글에 첨부된 파일 목록 조회 -->
+    <select id="getFilesByBoardId" parameterType="string" resultType="back.model.common.PostFile">
+        SELECT 
+            POST_FILE_ID,
+            FILE_NAME,
+            FILE_PATH,
+            CREATE_ID,
+            UPDATE_ID,
+            CREATE_DT,
+            UPDATE_DT,
+            DEL_YN
+        FROM POST_FILE
+        WHERE DEL_YN = 'N'
+    </select>
+    
+    <!-- 게시글에 첨부된 파일 조회 -->
+    <select id="getFileByFileId" parameterType="back.model.common.PostFile" resultType="back.model.common.PostFile">
+        SELECT 
+            FILE_ID,
+            FILE_NAME,
+            FILE_PATH,
+            CREATE_ID,
+            UPDATE_ID,
+            CREATE_DT,
+            UPDATE_DT,
+            DEL_YN
+        FROM POST_FILE
+        WHERE FILE_ID = #{fileId}
+        AND DEL_YN = 'N'
+    </select>
+
+    <!-- 게시글에 새로운 파일 등록 -->
+	<insert id="insertFile" parameterType="back.model.common.PostFile">
+	        INSERT INTO POST_FILE (
+	            FILE_ID, FILE_NAME, FILE_PATH, CREATE_DT
+	        ) VALUES (
+	            SEQ_TEST_POST_FILE.NEXTVAL,  
+	            #{fileName},
+	            #{filePath},
+	            SYSDATE
+	        )
+	        
+	       <selectKey keyProperty="fileId" resultType="int" order="AFTER">
+		       SELECT SEQ_POST_FILE.CURRVAL FROM DUAL
+		    </selectKey>
+		    
+	</insert>
+
+    <!-- 파일 삭제 처리 (DEL_YN을 'Y'로 업데이트) -->
+    <update id="deleteFile" parameterType="back.model.common.PostFile">
+        UPDATE POST_FILE
+        SET 
+            DEL_YN = 'Y',
+            UPDATE_DT = SYSDATE,
+        WHERE FILE_ID = #{fileId}
+        AND DEL_YN = 'N'
+    </update>
+    
+    <select id="awalkIdSearch" parameterType="back.model.common.PostFile" resultType="back.model.common.PostFile">
+	    SELECT
+	    	POST_FILE_ID AS postFileId,
+	    	POST_FILE_NAME AS postFileName,
+	    	POST_FILE_CATEGORY AS postFileCategory,
+	    	POST_FILE_KEY AS postFileKey,
+	    	POST_FILE_PATH AS postFilePath,
+	    	CREATE_DT,
+	    	UPDATE_DT,
+	    	CREATE_ID,
+	    	DEL_YN
+	    FROM POST_FILE
+	    WHERE POST_FILE_CATEGORY = #{postFileCategory}
+	    AND POST_FILE_KEY = #{postFileKey}
+	    AND DEL_YN = 'N'
+	    ORDER BY CREATE_DT DESC
+	</select>
+
+
+</mapper>

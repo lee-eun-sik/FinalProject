@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="back.mapper.file.FileMapper">
+
+    
+  <!-- 파일 조회 -->
+    <select id="getFileByFileId" parameterType="int" resultType="back.model.common.PostFile">
+        SELECT 
+            POST_FILE_ID,
+			POST_FILE_CATEGORY,
+			POST_FILE_KEY,
+		   	POST_FILE_NAME, 
+			POST_FILE_PATH,
+			CREATE_DT,
+			UPDATE_DT,
+			CREATE_ID,
+			UPDATE_ID,
+			DEL_YN
+        FROM 
+            POST_FILE
+        WHERE POST_FILE_ID = #{postFileId}
+        AND DEL_YN = 'N'
+    </select>
+
+    <!--게시글에 첨부된 파일 목록 조회 -->
+    <select id="getFilesByFileKey" parameterType="back.model.common.PostFile" resultType="back.model.common.PostFile">
+        SELECT 
+            POST_FILE_ID,
+			POST_FILE_CATEGORY,
+			POST_FILE_KEY,
+			POST_FILE_NAME, 
+			POST_FILE_PATH,
+			CREATE_DT,
+			UPDATE_DT,
+			CREATE_ID,
+			UPDATE_ID,
+            DEL_YN
+        FROM POST_FILE
+        WHERE POST_FILE_CATEGORY = #{postFileCategory}
+      AND POST_FILE_KEY = #{postFileKey}
+      AND DEL_YN = 'N'
+    </select>
+
+    <!-- 게시글에 새로운 파일 등록 -->
+	<insert id="insertFile" parameterType="back.model.common.PostFile">
+		<selectKey keyProperty="postFileId" resultType="int" order="BEFORE">
+			SELECT POST_FILE_SEQ.NEXTVAL FROM DUAL
+		</selectKey>  
+		INSERT INTO POST_FILE (
+			POST_FILE_ID,
+			POST_FILE_CATEGORY,
+			POST_FILE_KEY,
+			POST_FILE_PATH,
+			POST_FILE_NAME,
+			CREATE_DT,
+			UPDATE_DT,
+			CREATE_ID,
+			UPDATE_ID
+		) VALUES (
+            #{postFileId},
+	        #{postFileCategory},
+	        #{postFileKey},
+	        #{postFilePath},
+	        #{postFileName},
+	        SYSDATE,
+	        SYSDATE,
+	        #{createId},
+	       	#{createId}
+		) 
+	</insert>
+
+	<!-- 파일 삭제 처리 (DEL_YN을 'Y'로 업데이트) -->
+    <update id="deleteFile" parameterType="back.model.common.PostFile">
+        UPDATE POST_FILE
+        SET 
+            DEL_YN = 'Y',
+            UPDATE_DT = SYSDATE,
+            UPDATE_ID = #{updateId}
+        WHERE POST_FILE_ID = #{postFileId}
+        AND DEL_YN = 'N'
+    </update>
+    
+    <select id="getAllFiles" resultType="back.model.common.PostFile">
+	    SELECT POST_FILE_ID, POST_FILE_NAME, POST_FILE_CATEGORY, POST_FILE_KEY, POST_FILE_PATH, CREATE_ID, UPDATE_ID, CREATE_DT, UPDATE_DT, DEL_YN
+	    FROM POST_FILE
+	    WHERE DEL_YN = 'N'
+	    AND POST_FILE_KEY = #{postFileKey}
+	    AND POST_FILE_CATEGORY = #{postFileCategory}
+	    ORDER BY CREATE_DT DESC
+	</select>
+
+    <!--
+     게시글에 첨부된 파일 목록 조회 
+    <select id="getFilesByBoardId" parameterType="string" resultType="back.model.common.PostFile">
+        SELECT 
+            FILE_ID,
+            BOARD_ID,
+            FILE_NAME,
+            FILE_PATH,
+            CREATE_ID,
+            UPDATE_ID,
+            CREATE_DT,
+            UPDATE_DT,
+            DEL_YN
+        FROM POST_FILE
+        WHERE BOARD_ID = #{boardId}
+        AND DEL_YN = 'N'
+    </select>
+    
+     게시글에 첨부된 파일 조회 
+    <select id="getFileByFileId" parameterType="back.model.common.PostFile" resultType="back.model.common.PostFile">
+        SELECT 
+            FILE_ID,
+            BOARD_ID,
+            FILE_NAME,
+            FILE_PATH,
+            CREATE_ID,
+            UPDATE_ID,
+            CREATE_DT,
+            UPDATE_DT,
+            DEL_YN
+        FROM POST_FILE
+        WHERE FILE_ID = #{fileId}
+        AND DEL_YN = 'N'
+    </select>
+
+     게시글에 새로운 파일 등록 
+	<insert id="insertFile" parameterType="back.model.common.PostFile">
+		INSERT INTO POST_FILE (
+			FILE_ID, 
+			BOARD_ID, 
+			FILE_NAME, 
+			FILE_PATH, 
+			CREATE_ID, 
+			CREATE_DT
+		) VALUES (
+            SEQ_POST_FILE.NEXTVAL,  
+            #{boardId},
+            #{fileName},
+            #{filePath},
+            #{createId},
+            SYSDATE
+		)
+		<selectKey keyProperty="fileId" resultType="int" order="AFTER">
+			SELECT SEQ_POST_FILE.CURRVAL FROM DUAL
+		</selectKey>    
+	</insert>
+
+     파일 삭제 처리 (DEL_YN을 'Y'로 업데이트) 
+    <update id="deleteFile" parameterType="back.model.common.PostFile">
+        UPDATE POST_FILE
+        SET 
+            DEL_YN = 'Y',
+            UPDATE_DT = SYSDATE,
+            UPDATE_ID = #{updateId}
+        WHERE FILE_ID = #{fileId}
+        AND DEL_YN = 'N'
+    </update>
+    -->
+    <!-- 
+        최신 업로드된 파일 ID 조회 
+        - POST_FILE 테이블에서 ref_id와 category 기준으로 가장 최근 파일 1개 선택
+        - FILE_ID는 자동 증가이므로 성능을 위해 create_dt 기준 정렬
+        - ref_id는 일반적으로 ANIMAL_ID
+    -->
+   <select id="selectLatestFileIdByRefId" resultType="long">
+	  SELECT post_file_id
+	  FROM POST_FILE
+	  WHERE post_file_key = #{refId} AND post_file_category = #{category} AND del_yn = 'N'
+	  ORDER BY create_dt DESC
+	  FETCH FIRST 1 ROWS ONLY
+   </select>
+   <!-- 특정 키에 해당하는 파일들 업데이트 처리 -->
+	<update id="updateFilesByKey" parameterType="back.model.common.PostFile">
+	    UPDATE POST_FILE
+	    SET 
+	        POST_FILE_NAME = #{postFileName},
+	        POST_FILE_PATH = #{postFilePath},
+	        UPDATE_ID = #{updateId},
+	        UPDATE_DT = SYSDATE
+	    WHERE POST_FILE_KEY = #{postFileKey}
+	      AND POST_FILE_CATEGORY = #{postFileCategory}
+	      AND DEL_YN = 'N'
+	      <if test="postFileId != null">
+            AND POST_FILE_ID = #{postFileId}
+          </if>
+	</update>
+</mapper>
